@@ -1,0 +1,47 @@
+plugins {
+    id 'java'
+    id("io.qameta.allure") version "2.11.2"
+    id("io.freefair.lombok") version "6.3.0"
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'io.rest-assured:rest-assured:4.4.0'
+    implementation 'io.qameta.allure:allure-rest-assured:2.27.0'
+
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.1")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.13.1")
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+task rerunTests(type: Exec) {
+    def testFilePath = "src/test/resources/FailedTests.txt"
+    def os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem;
+
+    def terminal = os.isWindows() ? "cmd" : "bash"
+    def commandKey = os.isWindows() ? "/c" : "-c"
+    if (new File(testFilePath).exists()) {
+        def testFileContent = new File(testFilePath).text.trim()
+        if (!testFileContent.isEmpty()) {
+            commandLine terminal, commandKey, "./gradlew clean test $testFileContent"
+        } else {
+            commandLine terminal, commandKey, "echo test file is empty"
+        }
+    } else {
+        commandLine terminal, commandKey, "echo test file does not exist"
+    }
+}
